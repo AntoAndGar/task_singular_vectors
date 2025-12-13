@@ -5,10 +5,15 @@ import hydra
 
 import wandb
 from omegaconf import DictConfig, OmegaConf
+import certifi
+import os
+
 
 from src.eval.aggregation import create_task_vector
 from src.eval.eval_utils import perform_eval_with_merged_vector
 from src.utils.variables_and_paths import ALL_DATASETS
+
+os.environ["SSL_CERT_FILE"] = certifi.where()
 
 
 @hydra.main(config_path="config", config_name="config", version_base="1.3")

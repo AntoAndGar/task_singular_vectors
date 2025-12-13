@@ -87,8 +87,15 @@ def torch_save(model, save_path, save_state_dict=True):
 
 
 def torch_load(save_path, device=None):
-    model = torch.load(save_path, map_location="cpu")
-    if device is not None:
+    """
+    Wrapper around torch.load that preserves pre-2.6 behavior.
+
+    PyTorch 2.6 switched the default of weights_only to True, which breaks
+    loading pickled nn.Modules such as ClassificationHead. Explicitly set
+    weights_only=False so previously saved checkpoints keep working.
+    """
+    model = torch.load(save_path, map_location="cpu", weights_only=False)
+    if device is not None and hasattr(model, "to"):
         model = model.to(device)
     return model
 

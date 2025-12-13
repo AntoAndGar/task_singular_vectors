@@ -1,10 +1,13 @@
 from pathlib import Path
 from typing import Literal
+import os
 
 TQDM_BAR_FORMAT = "{l_bar}{bar:10}{r_bar}{bar:-10b}"
 MODELS = ["ViT-B-32", "ViT-B-16", "ViT-L-14"]
-OPENCLIP_CACHEDIR = Path(Path.home(), "openclip-cachedir", "open_clip").as_posix()
-CACHEDIR = None
+OPENCLIP_CACHEDIR = os.getenv(
+    "OPENCLIP_CACHEDIR", Path(Path.home(), "openclip-cachedir", "open_clip").as_posix()
+)
+CACHEDIR = os.getenv("CACHEDIR", None)
 
 ALL_DATASETS = [
     "Cars",
@@ -39,12 +42,18 @@ def cleanup_dataset_name(dataset_name: str):
 
 
 def get_zeroshot_path(root, dataset, model):
-    return Path(root, model, cleanup_dataset_name(dataset), f"nonlinear_zeroshot.pt").as_posix()
+    return Path(
+        root, model, cleanup_dataset_name(dataset), f"nonlinear_zeroshot.pt"
+    ).as_posix()
 
 
 def get_finetuned_path(root, dataset, model):
-    return Path(root, model, cleanup_dataset_name(dataset), f"nonlinear_finetuned.pt").as_posix()
+    return Path(
+        root, model, cleanup_dataset_name(dataset), f"nonlinear_finetuned.pt"
+    ).as_posix()
 
 
 def get_single_task_accuracies_path(model):
-    return Path("results/single_task", model, f"nonlinear_ft_accuracies.json").as_posix()
+    return Path(
+        "results/single_task", model, f"nonlinear_ft_accuracies.json"
+    ).as_posix()
