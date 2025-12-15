@@ -37,6 +37,14 @@ python finetune.py --model=ViT-B-32 --world-size=2
 
 ## Task Singular Vectors Evaluation
 
+## Custom Subset Evaluation
+
+Run TSV-Merge on selected tasks with:
+
+```bash
+OPENCLIP_CACHEDIR=$SCRATCH/openclip python main.py model=ViT-B-16 method="TSVM" DATASETS=[Cars,DTD,EuroSAT,GTSRB]
+```
+
 ### Model merging evaluation
 
 Evaluation is performed with Hydra, please modify `model_location` and `data_location` in `config/config.yaml` before evaluation. 

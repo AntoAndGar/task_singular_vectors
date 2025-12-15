@@ -1,0 +1,44 @@
+# torch
+# torchvision
+# numpy
+# pillow
+# timm
+# open-clip-torch
+# datasets
+
+
+# Core ML
+torch
+torchvision
+torchaudio
+numpy
+scipy
+
+# Vision / models
+timm
+open-clip-torch
+pillow
+
+# HuggingFace ecosystem
+huggingface-hub
+datasets
+sentencepiece
+safetensors
+protobuf
+regex
+ftfy
+
+# Training / eval / utils
+wandb
+hydra-core
+torcheval
+h5py
+gdown
+
+# Infra / misc
+requests
+pyyaml
+packaging
+filelock
+fsspec
+wcwidth

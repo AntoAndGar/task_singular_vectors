@@ -132,8 +132,12 @@ class PytorchStanfordCars(VisionDataset):
             )
 
     def _check_exists(self) -> bool:
+
         if not (self._base_folder / "devkit").is_dir():
+            print("Devkit does not exist", self._base_folder / "devkit")
             return False
+
+        print("Devkit exists:", self._base_folder / "devkit")
 
         return self._annotations_mat_path.exists() and self._images_base_path.is_dir()
 

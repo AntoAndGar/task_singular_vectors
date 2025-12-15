@@ -6,3 +6,6 @@ media/*
 *.pt
 *DS_Store
 *.zip
+.venv
+*.pyc
+*__pycache__*
