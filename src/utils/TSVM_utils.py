@@ -641,6 +641,30 @@ def compute_procrustes(x: torch.Tensor) -> torch.Tensor:
     return u @ vt
 
 
+def get_tsv_merge(tensors):
+    N_tasks = len(tensors)
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    R = min(u.shape[1], vt.shape[2])
+    Rp = R // N_tasks
+    u, s, vt = u[:, :, :Rp], s[:, :Rp], vt[:, :Rp, :]
+
+    # # # w/o decorrelation
+    # tau_bl = torch.einsum("bij,bj,bjk->bik", u, s, vt)
+    # tau[layer_name] = tau_bl.sum(dim=0)
+
+    # w/ decorrelation
+    B, Di, _ = u.shape
+    _, _, Do = vt.shape
+    # (Di, B, R)
+    u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
+    s_hat = s.reshape(-1)
+    vt_hat = vt.reshape(B * Rp, Do)
+    u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+    vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
+    tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
+    return tau_l
+
+
 def compute_and_sum_svd_mem_reduction_3(task_vectors, config, *args, **kwargs):
     """Computes the Singular Value Decomposition (SVD) for each task vector and merge the results.
 

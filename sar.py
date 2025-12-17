@@ -18,18 +18,29 @@ from src.utils.variables_and_paths import ALL_DATASETS, get_zeroshot_path
 os.environ["SSL_CERT_FILE"] = certifi.where()
 
 
+def compute_subspace_alignment(a, b):
+    # compute proj mat for a
+    u, s, vt = torch.linalg.svd(a, full_matrices=False)
+    k = 10
+    pi = u[:, :k] @ u[:, :k].T
+    return torch.linalg.norm(pi @ b, ord="fro") / torch.linalg.norm(b, ord="fro")
+
+
 def avg_subspace_alignment(
     tv_dict,
     pt_dict,
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
 ):
+    sar_list = []
     for key in tv_dict.keys():
-        tv_vec = tv_dict[key]
-        pt_vec = pt_dict[key]
-        tv_vec = tv_vec.to(device)
-        pt_vec = pt_vec.to(device)
-        avg_subspace_alignment = torch.mean(torch.abs(tv_vec - pt_vec))
-        print(f"Avg subspace alignment for {key}: {avg_subspace_alignment}")
+        tv_tens = tv_dict[key]
+        pt_tens = pt_dict[key]
+        # if 2d and not text_projection, compute the subspace alignment
+        if len(tv_tens.shape) == 2 and "text_projection" not in key:
+            merged_tens = pt_tens + tv_tens
+            sar_l = compute_subspace_alignment(merged_tens, tv_tens)
+            sar_list.append(sar_l)
+    print(f"Avg subspace alignment: {torch.mean(torch.tensor(sar_list))}")
 
 
 @hydra.main(config_path="config", config_name="config", version_base="1.3")
