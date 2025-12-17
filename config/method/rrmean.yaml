@@ -1,0 +1,6 @@
+name: rrmean
+k: 100
+use_ties: false
+ties_agg: "sum"
+
+full_name: ${method.name}_k=${method.k}

@@ -4,6 +4,8 @@ from pprint import pprint
 import hydra
 
 import wandb
+import torch
+from src.models.modeling import ImageEncoder
 from omegaconf import DictConfig, OmegaConf
 import certifi
 import os
@@ -11,9 +13,23 @@ import os
 
 from src.eval.aggregation import create_task_vector
 from src.eval.eval_utils import perform_eval_with_merged_vector
-from src.utils.variables_and_paths import ALL_DATASETS
+from src.utils.variables_and_paths import ALL_DATASETS, get_zeroshot_path
 
 os.environ["SSL_CERT_FILE"] = certifi.where()
+
+
+def avg_subspace_alignment(
+    tv_dict,
+    pt_dict,
+    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+):
+    for key in tv_dict.keys():
+        tv_vec = tv_dict[key]
+        pt_vec = pt_dict[key]
+        tv_vec = tv_vec.to(device)
+        pt_vec = pt_vec.to(device)
+        avg_subspace_alignment = torch.mean(torch.abs(tv_vec - pt_vec))
+        print(f"Avg subspace alignment for {key}: {avg_subspace_alignment}")
 
 
 @hydra.main(config_path="config", config_name="config", version_base="1.3")
@@ -30,35 +46,22 @@ def my_app(cfg: DictConfig) -> None:
     # set up experiment for WandB
     print(cfg.method.full_name)
     print()
-    wandb.init(
-        config=OmegaConf.to_container(cfg),
-        mode=cfg.wandb.mode,
-        project=cfg.wandb.project,
-        group=cfg.wandb.group,
-        dir="logs/",
-    )
-    wandb.config.update({"method.full_name1": cfg.method.full_name})
-    wandb.config.update({"method.keep": cfg.method.k})
     print(OmegaConf.to_yaml(cfg))
     OmegaConf.set_struct(cfg, True)
 
     # create final task vector
     task_vector_dict, eval_masks, svd_dict = create_task_vector(cfg)
-    print("*" * 100)
-    print("*" * 37, "Created task vector dict", "*" * 37)
-    print("*" * 100)
-    print("\n" * 3)
+    pt_ckpt_path = get_zeroshot_path(cfg.model_location, "MNIST", cfg.model)
+    pt_ckpt = torch.load(pt_ckpt_path, map_location="cpu")
 
-    # perform evaluation and log results
-    print("*" * 100)
-    print("*" * 39, "Starting Evaluation.", "*" * 39)
-    print("*" * 100)
-    additive_accuracies = perform_eval_with_merged_vector(
-        cfg, task_vector_dict, eval_masks, svd_dict
-    )
-    pprint(additive_accuracies, width=1)
-    wandb.log(additive_accuracies)
-    wandb.finish(quiet=True)
+    # load pretrained checkpoint
+    pt_model = ImageEncoder(cfg.model)
+    pt_model.load_state_dict(pt_ckpt)
+    pt_dict = ImageEncoder(cfg.model).state_dict()
+    tv_dict = task_vector_dict.vector
+    avg_subspace_alignment(tv_dict, pt_dict)
+    # task_vector_dict.apply_to(pretrained_checkpoint, scaling_coef=1.0, args=cfg)
+    # model=ViT-B-16 method="rrmean" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3
 
 
 if __name__ == "__main__":

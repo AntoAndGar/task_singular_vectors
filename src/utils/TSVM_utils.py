@@ -1,5 +1,6 @@
 import torch
 import math
+from tqdm import tqdm
 
 
 def compute_svd_dict(task_vectors, config):
@@ -625,3 +626,64 @@ def compute_and_sum_svd_mem_reduction_dummy(task_vectors, config):
                 )
 
     return new_vector
+
+
+def compute_procrustes(x: torch.Tensor) -> torch.Tensor:
+    """Finds best ortho approx of x
+
+    Args:
+        x (torch.Tensor): (Di, Do)
+
+    Returns:
+        torch.Tensor: (Di, Do)
+    """
+    u, _, vt = torch.linalg.svd(x, full_matrices=False)
+    return u @ vt
+
+
+def compute_and_sum_svd_mem_reduction_3(task_vectors, config, *args, **kwargs):
+    """Computes the Singular Value Decomposition (SVD) for each task vector and merge the results.
+
+    Args:
+        task_vectors (List[Dict]): A list of task vector objects (state dicts)
+        config (Object): Contains the following attributes: [DATASETS, device]
+    """
+    tau = {}
+    device = config.device
+    N_tasks = len(config.DATASETS)
+    pbar = tqdm(
+        task_vectors[0].vector.keys(),
+        desc="Computing SVD",
+        total=len(task_vectors[0].vector.keys()),
+        leave=False,
+    )
+    for layer_name in pbar:
+        tensors = torch.stack([tv.vector[layer_name] for tv in task_vectors]).to(device)
+
+        # If it's 2D we do SVD
+        layer_tensor_shape = task_vectors[0].vector[layer_name].shape
+        if len(layer_tensor_shape) == 2 and "text_projection" not in layer_name:
+            u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+            R = min(u.shape[1], vt.shape[2])
+            Rp = R // N_tasks
+            u, s, vt = u[:, :, :Rp], s[:, :Rp], vt[:, :Rp, :]
+
+            # # # w/o decorrelation
+            # tau_bl = torch.einsum("bij,bj,bjk->bik", u, s, vt)
+            # tau[layer_name] = tau_bl.sum(dim=0)
+
+            # w/ decorrelation
+            B, Di, _ = u.shape
+            _, _, Do = vt.shape
+            # (Di, B, R)
+            u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
+            s_hat = s.reshape(-1)
+            vt_hat = vt.reshape(B * Rp, Do)
+            u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+            vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
+            tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
+            tau[layer_name] = tau_l
+        else:  # if not 2D we compute the mean
+            tau[layer_name] = torch.mean(tensors, dim=0)
+
+    return tau

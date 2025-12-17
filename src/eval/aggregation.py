@@ -4,6 +4,7 @@ from typing import Dict, Optional, Tuple
 import torch
 from omegaconf import DictConfig
 
+from src.utils.rrmean_utils import compute_rrmean_task_vector
 from src.models.task_vectors import ImageEncoder, NonLinearTaskVector
 from src.utils.tallmask_utils import (
     construct_consensus_mask,
@@ -20,6 +21,7 @@ from src.utils.utils import (
 )
 from src.utils.variables_and_paths import get_finetuned_path, get_zeroshot_path
 from src.utils.TSVM_utils import (
+    compute_and_sum_svd_mem_reduction_3,
     compute_svd_dict,
     sum_svd_dict,
     compute_and_sum_svd_mem_reduction,
@@ -27,6 +29,7 @@ from src.utils.TSVM_utils import (
     compute_and_sum_svd_mem_reduction_dummy,
 )
 from src.utils.TSVC_utils import compress_tv
+from src.utils.iso import compute_iso_c_task_vector
 
 
 def get_all_checkpoints(
@@ -154,7 +157,7 @@ def create_task_vector(
     remove_keys = []
 
     print(f"Flattening out Checkpoints")
-    if config.method.name not in ["TSVM", "TSVM_2", "TSVC", "dummy"]:
+    if config.method.name not in ["TSVM", "TSVM_2", "TSVC", "dummy", "rrmean"]:
         flat_ft = torch.vstack(
             [state_dict_to_vector(check, remove_keys) for check in ft_checks]
         )
@@ -177,7 +180,7 @@ def create_task_vector(
                 for i in range(len(ft_checks))
             ]
         )
-    elif config.method.name in ["TSVM", "TSVM_2", "dummy"]:
+    elif config.method.name in ["TSVM", "TSVM_2", "dummy", "rrmean"]:
         # Create the task vectors
         task_vectors = [
             NonLinearTaskVector(config.model, ptm_check, check) for check in ft_checks
@@ -307,10 +310,18 @@ def create_task_vector(
         )
         merged_tv = tv_flat_checks.sum(dim=0)
         svd_dict = compress_tv(task_vectors, 1 / len(config.DATASETS))
+
+    elif config.method.name == "rrmean":
+        # SVD baseline
+        print(f"=== Using RRMean ===")
+
+        # new_merged_tv = compute_rrmean_task_vector(task_vectors, config)
+        # new_merged_tv = compute_and_sum_svd_mem_reduction_3(task_vectors, config)
+        new_merged_tv = compute_iso_c_task_vector(task_vectors, config)
     else:
         raise ValueError(f"Method {config.method.name} not defined.")
 
-    if config.method.name in ["TSVM", "TSVM_2", "dummy"]:
+    if config.method.name in ["TSVM", "TSVM_2", "dummy", "rrmean"]:
         task_vector = NonLinearTaskVector(model_name=config.model, vector=new_merged_tv)
     else:
         merged_tv_state_dict = vector_to_state_dict(
@@ -328,3 +339,20 @@ def create_task_vector(
         svd_dict = None
 
     return task_vector, eval_masks, svd_dict
+
+
+# """
+# ****************************************************************************************************
+# *************************************** Starting Evaluation. ***************************************
+# ****************************************************************************************************
+# Error executing job with overrides: ['model=ViT-B-16', 'method=rrmean', 'DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN]', 'n_eval_points=1']
+# Traceback (most recent call last):
+#   File "/network/scratch/m/marawan.gamal/tsv/main.py", line 56, in my_app
+#     additive_accuracies = perform_eval_with_merged_vector(
+#   File "/network/scratch/m/marawan.gamal/tsv/src/eval/eval_utils.py", line 72, in perform_eval_with_merged_vector
+#     best_val_metrics = val_metrics[optimal_coef]
+# KeyError: None
+
+# Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+# wandb:
+# """
