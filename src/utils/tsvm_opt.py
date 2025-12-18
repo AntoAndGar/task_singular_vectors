@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 
-def compute_iso_c_task_vector(task_vectors, config, *args, **kwargs):
+def compute_tsvm_opt(task_vectors, config, *args, **kwargs):
     """Computes the ISO-C task vector. See https://arxiv.org/pdf/2502.04959 for more details.
 
     Args:

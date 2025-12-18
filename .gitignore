@@ -9,3 +9,4 @@ media/*
 .venv
 *.pyc
 *__pycache__*
+*/datasets/*

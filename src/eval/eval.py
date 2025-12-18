@@ -208,6 +208,7 @@ def evaluate_task_vector(
     elif args.method.name == "TSVM_2":
         scaling_coef_range = np.linspace(0.0, 3.0, args.n_eval_points)[1:]
     else:
+        print(f"*** Evaluating at {args.n_eval_points} points ***")
         scaling_coef_range = np.linspace(0.0, 1.0, args.n_eval_points)[1:]
 
     if args.method.name == "tall_mask":

@@ -181,6 +181,7 @@ rank_threshold = 0.95
 allignment_ratios_sum = {ds: [] for ds in datasets}
 allignment_ratios_iso = {ds: [] for ds in datasets}
 allignment_ratios_tsv = {ds: [] for ds in datasets}
+allignment_ratios_opt = {ds: [] for ds in datasets}
 with torch.no_grad():
     for key in task_vectors[0].vector:
         _tvs = [task_vector.vector[key].to(device) for task_vector in task_vectors]
@@ -190,17 +191,32 @@ with torch.no_grad():
 
             merge_by_sum = sum(_tvs)
             U, S, V = torch.linalg.svd(merge_by_sum, full_matrices=False)
-            sum_rel_rank = calc_rank(S.cpu(), norm_thresh=rank_threshold)
+            # sum_rel_rank = calc_rank(S.cpu(), norm_thresh=rank_threshold)
+            sum_rel_rank = 32
             U_sum_k = U[:, :sum_rel_rank]
 
             S_iso = torch.ones_like(S) * S.mean()
-            iso_rel_rank = calc_rank(S_iso.cpu(), norm_thresh=rank_threshold)
+            # iso_rel_rank = calc_rank(S_iso.cpu(), norm_thresh=rank_threshold)
+            iso_rel_rank = 32
             U_iso_k = U[:, :iso_rel_rank]
 
             # Get TSV U,S,Vt
             _, U_tsv, S_tsv, V_tsv = get_tsv_merge(torch.stack(_tvs))
-            tsv_rel_rank = calc_rank(S_tsv.cpu(), norm_thresh=rank_threshold)
+            # tsv_rel_rank = calc_rank(S_tsv.cpu(), norm_thresh=rank_threshold)
+            tsv_rel_rank = 32
             U_tsv_k = U_tsv[:, :tsv_rel_rank]
+
+            # Get opt merge
+            _tvs_stacked = torch.stack(_tvs)  # (N_tasks, Di, Do)
+            delta_t_outers = torch.einsum("bik,bjk->bik", _tvs_stacked, _tvs_stacked)
+            delta_t_frobs = torch.linalg.norm(_tvs_stacked, ord="fro", dim=(1, 2))[
+                :, None, None
+            ]
+            mat_a = (delta_t_outers / delta_t_frobs).sum(dim=0)
+            U_opt, S_opt, Vt_opt = torch.linalg.svd(mat_a, full_matrices=False)
+            # opt_rel_rank = calc_rank(S_opt.cpu(), norm_thresh=rank_threshold)
+            opt_rel_rank = 32
+            U_opt_k = U_opt[:, :opt_rel_rank]
 
             for i, tv in enumerate(_tvs):
                 U_tv, S_tv, V_tv = torch.linalg.svd(tv, full_matrices=False)
@@ -226,10 +242,29 @@ with torch.no_grad():
                 U_tsv_merge_k, S_tsv_merge_k, V_tsv_merge_k = torch.linalg.svd(
                     proj_tv_onto_tsv_merge, full_matrices=False
                 )
-                ar_tsv_merge = alignment_ratio(S_tv.cpu(), S_tsv_merge_k.cpu())
+                # ar_tsv_merge = alignment_ratio(S_tv.cpu(), S_tsv_merge_k.cpu())
+                ar_tsv_merge = torch.linalg.norm(
+                    proj_tv_onto_tsv_merge.cpu(), ord="fro"
+                ) / torch.linalg.norm(tv.cpu(), ord="fro")
                 allignment_ratios_tsv[datasets[i]].append(ar_tsv_merge)
                 print(
                     f"Alignment ratio for {datasets[i]}->TSV_merge_k: {ar_tsv_merge:.4f}"
+                )
+
+                # Project onto opt merge
+                proj_tv_onto_opt_merge = torch.linalg.multi_dot(
+                    (U_opt_k, U_opt_k.T, tv)
+                )
+                U_opt_merge_k, S_opt_merge_k, V_opt_merge_k = torch.linalg.svd(
+                    proj_tv_onto_opt_merge, full_matrices=False
+                )
+                # ar_opt_merge = alignment_ratio(S_tv.cpu(), S_opt_merge_k.cpu())
+                ar_opt_merge = torch.linalg.norm(
+                    proj_tv_onto_opt_merge.cpu(), ord="fro"
+                ) / torch.linalg.norm(tv.cpu(), ord="fro")
+                allignment_ratios_opt[datasets[i]].append(ar_opt_merge)
+                print(
+                    f"Alignment ratio for {datasets[i]}->OPT_merge_k: {ar_opt_merge:.4f}"
                 )
         else:
             print(f"Skipping {key}")
@@ -246,6 +281,10 @@ avg_alignment_ratios_tsv = {
     ds: np.mean(ar) for ds, ar in allignment_ratios_tsv.items() if len(ar) > 0
 }
 print(f"Average alignment ratios for tsv: {avg_alignment_ratios_tsv}")
+avg_alignment_ratios_opt = {
+    ds: np.mean(ar) for ds, ar in allignment_ratios_opt.items() if len(ar) > 0
+}
+print(f"Average alignment ratios for opt: {avg_alignment_ratios_opt}")
 
 # # Plot
 # fig, axes = plt.subplots(1, 1, figsize=(6, 5))
@@ -291,3 +330,4 @@ print(f"Average alignment ratios for tsv: {avg_alignment_ratios_tsv}")
 
 # Average alignment ratios for sum: {'Cars': np.float32(0.78620523), 'DTD': np.float32(0.8081219), 'EuroSAT': np.float32(0.8315229), 'GTSRB': np.float32(0.816833), 'MNIST': np.float32(0.8613162), 'SVHN': np.float32(0.8681785)}
 # Average alignment ratios for iso: {'Cars': np.float32(0.92468745), 'DTD': np.float32(0.9393305), 'EuroSAT': np.float32(0.9413924), 'GTSRB': np.float32(0.93364024), 'MNIST': np.float32(0.9489486), 'SVHN': np.float32(0.9522428)}
+# Average alignment ratios for opt: {'Cars': np.float32(0.76577675), 'DTD': np.float32(0.77216804), 'EuroSAT': np.float32(0.84574395), 'GTSRB': np.float32(0.83108664), 'MNIST': np.float32(0.885977), 'SVHN': np.float32(0.88347983)}
