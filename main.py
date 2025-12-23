@@ -171,4 +171,56 @@ if __name__ == "__main__":
 #               'SVHNVal:top1': 0.8948,
 #               'avg_normalized_top1': np.float64(0.9673733946056443),
 #               'avg_top1': np.float64(0.9087600534125357)}}
+
+
+# Comparing both sides decorrelation vs one side decorrelation
+
+# two-side decorrelation w/ TSV
+#  'val_best': {'CarsVal:normalized_top1': 0.9161931818181818,
+#               'CarsVal:top1': 0.7923832923832924,
+#               'DTDVal:normalized_top1': 1.033477321814255,
+#               'DTDVal:top1': 0.848404255319149,
+#               'EuroSATVal:normalized_top1': 0.9630597014925374,
+#               'EuroSATVal:top1': 0.955925925925926,
+#               'GTSRBVal:normalized_top1': 0.9725770097670924,
+#               'GTSRBVal:top1': 0.9718468468468469,
+#               'MNISTVal:normalized_top1': 0.9941708542713568,
+#               'MNISTVal:top1': 0.9892,
+#               'SVHNVal:normalized_top1': 0.9247622984704423,
+#               'SVHNVal:top1': 0.8948,
+#               'avg_normalized_top1': np.float64(0.9673733946056443),
+#               'avg_top1': np.float64(0.9087600534125357)}}
+
+# one-side decorrelation w/ TSV (left side) v_ortho = v_hat
+#  'val_best': {'CarsVal:normalized_top1': 0.8522727272727272,
+#               'CarsVal:top1': 0.7371007371007371,
+#               'DTDVal:normalized_top1': 0.8423326133909288,
+#               'DTDVal:top1': 0.6914893617021277,
+#               'EuroSATVal:normalized_top1': 0.9011194029850746,
+#               'EuroSATVal:top1': 0.8944444444444445,
+#               'GTSRBVal:normalized_top1': 0.92862509391435,
+#               'GTSRBVal:top1': 0.9279279279279279,
+#               'MNISTVal:normalized_top1': 0.9881407035175879,
+#               'MNISTVal:top1': 0.9832,
+#               'SVHNVal:normalized_top1': 0.8885903265812319,
+#               'SVHNVal:top1': 0.8598,
+#               'avg_normalized_top1': np.float64(0.9001801446103168),
+#               'avg_top1': np.float64(0.8489937451958728)}}
+
+# one-side decorrelation w/ TSV (left side) u_ortho = u_hat
+
+#  'val_best': {'CarsVal:normalized_top1': 0.7954545454545454,
+#               'CarsVal:top1': 0.687960687960688,
+#               'DTDVal:normalized_top1': 0.8617710583153348,
+#               'DTDVal:top1': 0.7074468085106383,
+#               'EuroSATVal:normalized_top1': 0.8735074626865672,
+#               'EuroSATVal:top1': 0.867037037037037,
+#               'GTSRBVal:normalized_top1': 0.9297520661157025,
+#               'GTSRBVal:top1': 0.9290540540540541,
+#               'MNISTVal:normalized_top1': 0.9951758793969849,
+#               'MNISTVal:top1': 0.9902,
+#               'SVHNVal:normalized_top1': 0.9241422075237702,
+#               'SVHNVal:top1': 0.8942,
+#               'avg_normalized_top1': np.float64(0.8966338699154842),
+#               'avg_top1': np.float64(0.8459830979270695)}}
 # """

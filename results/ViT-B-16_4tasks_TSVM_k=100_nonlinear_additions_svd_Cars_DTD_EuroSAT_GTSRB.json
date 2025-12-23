@@ -1,0 +1,52 @@
+{
+    "test": {
+        "Cars:top1": 0.7872155204576545,
+        "DTD:top1": 0.8893617021276595,
+        "EuroSAT:top1": 0.9818518518518519,
+        "GTSRB:top1": 0.9762470308788599,
+        "Cars:normalized_top1": 0.8985095812633073,
+        "DTD:normalized_top1": 0.9047619047619048,
+        "EuroSAT:normalized_top1": 0.9928838951310861,
+        "GTSRB:normalized_top1": 0.986084452975048,
+        "avg_normalized_top1": 0.9455599585328366,
+        "avg_top1": 0.9086690263290065
+    },
+    "val": {
+        "1.5": {
+            "CarsVal:top1": 0.7653562653562653,
+            "DTDVal:top1": 0.9042553191489362,
+            "EuroSATVal:top1": 0.9751851851851852,
+            "GTSRBVal:top1": 0.9954954954954955,
+            "CarsVal:normalized_top1": 0.8849431818181818,
+            "DTDVal:normalized_top1": 1.101511879049676,
+            "EuroSATVal:normalized_top1": 0.9824626865671642,
+            "GTSRBVal:normalized_top1": 0.9962434259954921,
+            "avg_normalized_top1": 0.9912902933576284,
+            "avg_top1": 0.9100730662964704
+        },
+        "3.0": {
+            "CarsVal:top1": 0.044226044226044224,
+            "DTDVal:top1": 0.5585106382978723,
+            "EuroSATVal:top1": 0.8766666666666667,
+            "GTSRBVal:top1": 0.9256756756756757,
+            "CarsVal:normalized_top1": 0.05113636363636363,
+            "DTDVal:normalized_top1": 0.6803455723542116,
+            "EuroSATVal:normalized_top1": 0.8832089552238807,
+            "GTSRBVal:normalized_top1": 0.9263711495116453,
+            "avg_normalized_top1": 0.6352655101815253,
+            "avg_top1": 0.6012697562165648
+        }
+    },
+    "val_best": {
+        "CarsVal:top1": 0.7653562653562653,
+        "DTDVal:top1": 0.9042553191489362,
+        "EuroSATVal:top1": 0.9751851851851852,
+        "GTSRBVal:top1": 0.9954954954954955,
+        "CarsVal:normalized_top1": 0.8849431818181818,
+        "DTDVal:normalized_top1": 1.101511879049676,
+        "EuroSATVal:normalized_top1": 0.9824626865671642,
+        "GTSRBVal:normalized_top1": 0.9962434259954921,
+        "avg_normalized_top1": 0.9912902933576284,
+        "avg_top1": 0.9100730662964704
+    }
+}

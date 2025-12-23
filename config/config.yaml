@@ -20,6 +20,7 @@ batch_size: 32
 data_location: "datasets"
 model_location: "models/checkpoints"
 save_subfolder: ""
+opm: "avg"
 
 wandb:
   project: task-vectors

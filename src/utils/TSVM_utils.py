@@ -642,6 +642,14 @@ def compute_procrustes(x: torch.Tensor) -> torch.Tensor:
 
 
 def get_tsv_merge(tensors):
+    """Computes the TSV merge of the given tensors.
+
+    Args:
+        tensors (torch.Tensor): The tensors to merge. Shape: (N_tasks, Di, Do)
+
+    Returns:
+        torch.Tensor: The merged tensors. Shape: (Di, Do)
+    """
     N_tasks = len(tensors)
     u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
     R = min(u.shape[1], vt.shape[2])
@@ -703,7 +711,8 @@ def compute_and_sum_svd_mem_reduction_3(task_vectors, config, *args, **kwargs):
             u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
             s_hat = s.reshape(-1)
             vt_hat = vt.reshape(B * Rp, Do)
-            u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+            # u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+            u_ortho = u_hat
             vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
             tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
             tau[layer_name] = tau_l

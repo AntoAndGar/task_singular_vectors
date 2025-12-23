@@ -1,0 +1,52 @@
+{
+    "test": {
+        "Cars:top1": 0.6583758239024997,
+        "DTD:top1": 0.4787234042553192,
+        "EuroSAT:top1": 0.5392592592592592,
+        "GTSRB:top1": 0.5087094220110847,
+        "MNIST:top1": 0.7123,
+        "SVHN:top1": 0.5885064535955746,
+        "Cars:normalized_top1": 0.7514549325762953,
+        "DTD:normalized_top1": 0.48701298701298706,
+        "EuroSAT:normalized_top1": 0.5453183520599251,
+        "GTSRB:normalized_top1": 0.5138355726167626,
+        "MNIST:normalized_top1": 0.7140852130325814,
+        "SVHN:normalized_top1": 0.6016100530139407,
+        "avg_normalized_top1": 0.6022195183854153,
+        "avg_top1": 0.5809790605039563
+    },
+    "val": {
+        "1.0": {
+            "CarsVal:top1": 0.6560196560196561,
+            "DTDVal:top1": 0.4601063829787234,
+            "EuroSATVal:top1": 0.5444444444444444,
+            "GTSRBVal:top1": 0.5108858858858859,
+            "MNISTVal:top1": 0.7122,
+            "SVHNVal:top1": 0.5188,
+            "CarsVal:normalized_top1": 0.7585227272727273,
+            "DTDVal:normalized_top1": 0.5604751619870411,
+            "EuroSATVal:normalized_top1": 0.5485074626865671,
+            "GTSRBVal:normalized_top1": 0.5112697220135236,
+            "MNISTVal:normalized_top1": 0.7157788944723619,
+            "SVHNVal:normalized_top1": 0.5361719718892104,
+            "avg_normalized_top1": 0.6051209900535719,
+            "avg_top1": 0.5670760615547851
+        }
+    },
+    "val_best": {
+        "CarsVal:top1": 0.6560196560196561,
+        "DTDVal:top1": 0.4601063829787234,
+        "EuroSATVal:top1": 0.5444444444444444,
+        "GTSRBVal:top1": 0.5108858858858859,
+        "MNISTVal:top1": 0.7122,
+        "SVHNVal:top1": 0.5188,
+        "CarsVal:normalized_top1": 0.7585227272727273,
+        "DTDVal:normalized_top1": 0.5604751619870411,
+        "EuroSATVal:normalized_top1": 0.5485074626865671,
+        "GTSRBVal:normalized_top1": 0.5112697220135236,
+        "MNISTVal:normalized_top1": 0.7157788944723619,
+        "SVHNVal:normalized_top1": 0.5361719718892104,
+        "avg_normalized_top1": 0.6051209900535719,
+        "avg_top1": 0.5670760615547851
+    }
+}

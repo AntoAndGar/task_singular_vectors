@@ -1,0 +1,44 @@
+{
+    "test": {
+        "Cars:top1": 0.7877129710235046,
+        "DTD:top1": 0.923936170212766,
+        "GTSRB:top1": 0.9878068091844814,
+        "Cars:normalized_top1": 0.8990773598296664,
+        "DTD:normalized_top1": 0.939935064935065,
+        "GTSRB:normalized_top1": 0.9977607165706973,
+        "avg_normalized_top1": 0.9455910471118095,
+        "avg_top1": 0.8998186501402508
+    },
+    "val": {
+        "1.5": {
+            "CarsVal:top1": 0.7678132678132679,
+            "DTDVal:top1": 0.949468085106383,
+            "GTSRBVal:top1": 0.9992492492492493,
+            "CarsVal:normalized_top1": 0.8877840909090909,
+            "DTDVal:normalized_top1": 1.15658747300216,
+            "GTSRBVal:normalized_top1": 1.0,
+            "avg_normalized_top1": 1.0147905213037502,
+            "avg_top1": 0.9055102007229667
+        },
+        "3.0": {
+            "CarsVal:top1": 0.0171990171990172,
+            "DTDVal:top1": 0.5531914893617021,
+            "GTSRBVal:top1": 0.9504504504504504,
+            "CarsVal:normalized_top1": 0.019886363636363636,
+            "DTDVal:normalized_top1": 0.6738660907127431,
+            "GTSRBVal:normalized_top1": 0.9511645379413973,
+            "avg_normalized_top1": 0.5483056640968347,
+            "avg_top1": 0.5069469856703899
+        }
+    },
+    "val_best": {
+        "CarsVal:top1": 0.7678132678132679,
+        "DTDVal:top1": 0.949468085106383,
+        "GTSRBVal:top1": 0.9992492492492493,
+        "CarsVal:normalized_top1": 0.8877840909090909,
+        "DTDVal:normalized_top1": 1.15658747300216,
+        "GTSRBVal:normalized_top1": 1.0,
+        "avg_normalized_top1": 1.0147905213037502,
+        "avg_top1": 0.9055102007229667
+    }
+}

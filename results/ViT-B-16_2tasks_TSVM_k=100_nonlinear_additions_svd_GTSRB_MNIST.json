@@ -1,0 +1,260 @@
+{
+    "test": {
+        "GTSRB:top1": 0.9687252573238322,
+        "MNIST:top1": 0.9948,
+        "GTSRB:normalized_top1": 0.978486884197057,
+        "MNIST:normalized_top1": 0.9972932330827067,
+        "avg_normalized_top1": 0.9878900586398818,
+        "avg_top1": 0.9817626286619161
+    },
+    "val": {
+        "0.1": {
+            "GTSRBVal:top1": 0.4864864864864865,
+            "MNISTVal:top1": 0.7792,
+            "GTSRBVal:normalized_top1": 0.4868519909842224,
+            "MNISTVal:normalized_top1": 0.7831155778894472,
+            "avg_normalized_top1": 0.6349837844368348,
+            "avg_top1": 0.6328432432432433
+        },
+        "0.2": {
+            "GTSRBVal:top1": 0.5780780780780781,
+            "MNISTVal:top1": 0.8808,
+            "GTSRBVal:normalized_top1": 0.5785123966942148,
+            "MNISTVal:normalized_top1": 0.8852261306532664,
+            "avg_normalized_top1": 0.7318692636737406,
+            "avg_top1": 0.7294390390390391
+        },
+        "0.30000000000000004": {
+            "GTSRBVal:top1": 0.7034534534534534,
+            "MNISTVal:top1": 0.9406,
+            "GTSRBVal:normalized_top1": 0.7039819684447783,
+            "MNISTVal:normalized_top1": 0.9453266331658291,
+            "avg_normalized_top1": 0.8246543008053038,
+            "avg_top1": 0.8220267267267267
+        },
+        "0.4": {
+            "GTSRBVal:top1": 0.8370870870870871,
+            "MNISTVal:top1": 0.9658,
+            "GTSRBVal:normalized_top1": 0.8377160030052592,
+            "MNISTVal:normalized_top1": 0.9706532663316583,
+            "avg_normalized_top1": 0.9041846346684588,
+            "avg_top1": 0.9014435435435435
+        },
+        "0.5": {
+            "GTSRBVal:top1": 0.918918918918919,
+            "MNISTVal:top1": 0.9798,
+            "GTSRBVal:normalized_top1": 0.9196093163035312,
+            "MNISTVal:normalized_top1": 0.9847236180904523,
+            "avg_normalized_top1": 0.9521664671969917,
+            "avg_top1": 0.9493594594594594
+        },
+        "0.6000000000000001": {
+            "GTSRBVal:top1": 0.9594594594594594,
+            "MNISTVal:top1": 0.9838,
+            "GTSRBVal:normalized_top1": 0.9601803155522163,
+            "MNISTVal:normalized_top1": 0.9887437185929648,
+            "avg_normalized_top1": 0.9744620170725906,
+            "avg_top1": 0.9716297297297297
+        },
+        "0.7000000000000001": {
+            "GTSRBVal:top1": 0.9778528528528528,
+            "MNISTVal:top1": 0.9874,
+            "GTSRBVal:normalized_top1": 0.9785875281743049,
+            "MNISTVal:normalized_top1": 0.9923618090452262,
+            "avg_normalized_top1": 0.9854746686097655,
+            "avg_top1": 0.9826264264264264
+        },
+        "0.8": {
+            "GTSRBVal:top1": 0.9868618618618619,
+            "MNISTVal:top1": 0.9888,
+            "GTSRBVal:normalized_top1": 0.9876033057851239,
+            "MNISTVal:normalized_top1": 0.9937688442211056,
+            "avg_normalized_top1": 0.9906860750031148,
+            "avg_top1": 0.987830930930931
+        },
+        "0.9": {
+            "GTSRBVal:top1": 0.9891141141141141,
+            "MNISTVal:top1": 0.9904,
+            "GTSRBVal:normalized_top1": 0.9898572501878287,
+            "MNISTVal:normalized_top1": 0.9953768844221105,
+            "avg_normalized_top1": 0.9926170673049696,
+            "avg_top1": 0.9897570570570571
+        },
+        "1.0": {
+            "GTSRBVal:top1": 0.9883633633633634,
+            "MNISTVal:top1": 0.9916,
+            "GTSRBVal:normalized_top1": 0.9891059353869271,
+            "MNISTVal:normalized_top1": 0.9965829145728644,
+            "avg_normalized_top1": 0.9928444249798958,
+            "avg_top1": 0.9899816816816818
+        },
+        "1.1": {
+            "GTSRBVal:top1": 0.9887387387387387,
+            "MNISTVal:top1": 0.9922,
+            "GTSRBVal:normalized_top1": 0.9894815927873779,
+            "MNISTVal:normalized_top1": 0.9971859296482412,
+            "avg_normalized_top1": 0.9933337612178095,
+            "avg_top1": 0.9904693693693694
+        },
+        "1.2000000000000002": {
+            "GTSRBVal:top1": 0.9868618618618619,
+            "MNISTVal:top1": 0.9928,
+            "GTSRBVal:normalized_top1": 0.9876033057851239,
+            "MNISTVal:normalized_top1": 0.9977889447236181,
+            "avg_normalized_top1": 0.992696125254371,
+            "avg_top1": 0.989830930930931
+        },
+        "1.3": {
+            "GTSRBVal:top1": 0.9819819819819819,
+            "MNISTVal:top1": 0.9928,
+            "GTSRBVal:normalized_top1": 0.9827197595792636,
+            "MNISTVal:normalized_top1": 0.9977889447236181,
+            "avg_normalized_top1": 0.9902543521514409,
+            "avg_top1": 0.987390990990991
+        },
+        "1.4000000000000001": {
+            "GTSRBVal:top1": 0.96996996996997,
+            "MNISTVal:top1": 0.993,
+            "GTSRBVal:normalized_top1": 0.9706987227648385,
+            "MNISTVal:normalized_top1": 0.9979899497487437,
+            "avg_normalized_top1": 0.9843443362567911,
+            "avg_top1": 0.9814849849849849
+        },
+        "1.5": {
+            "GTSRBVal:top1": 0.9602102102102102,
+            "MNISTVal:top1": 0.9934,
+            "GTSRBVal:normalized_top1": 0.9609316303531179,
+            "MNISTVal:normalized_top1": 0.998391959798995,
+            "avg_normalized_top1": 0.9796617950760564,
+            "avg_top1": 0.9768051051051051
+        },
+        "1.6": {
+            "GTSRBVal:top1": 0.9523273273273273,
+            "MNISTVal:top1": 0.9934,
+            "GTSRBVal:normalized_top1": 0.9530428249436513,
+            "MNISTVal:normalized_top1": 0.998391959798995,
+            "avg_normalized_top1": 0.9757173923713232,
+            "avg_top1": 0.9728636636636636
+        },
+        "1.7000000000000002": {
+            "GTSRBVal:top1": 0.9384384384384384,
+            "MNISTVal:top1": 0.9928,
+            "GTSRBVal:normalized_top1": 0.9391435011269722,
+            "MNISTVal:normalized_top1": 0.9977889447236181,
+            "avg_normalized_top1": 0.9684662229252952,
+            "avg_top1": 0.9656192192192192
+        },
+        "1.8": {
+            "GTSRBVal:top1": 0.9222972972972973,
+            "MNISTVal:top1": 0.992,
+            "GTSRBVal:normalized_top1": 0.9229902329075882,
+            "MNISTVal:normalized_top1": 0.9969849246231156,
+            "avg_normalized_top1": 0.9599875787653519,
+            "avg_top1": 0.9571486486486487
+        },
+        "1.9000000000000001": {
+            "GTSRBVal:top1": 0.9054054054054054,
+            "MNISTVal:top1": 0.9908,
+            "GTSRBVal:normalized_top1": 0.9060856498873027,
+            "MNISTVal:normalized_top1": 0.9957788944723618,
+            "avg_normalized_top1": 0.9509322721798322,
+            "avg_top1": 0.9481027027027027
+        },
+        "2.0": {
+            "GTSRBVal:top1": 0.8885135135135135,
+            "MNISTVal:top1": 0.9898,
+            "GTSRBVal:normalized_top1": 0.8891810668670173,
+            "MNISTVal:normalized_top1": 0.9947738693467337,
+            "avg_normalized_top1": 0.9419774681068755,
+            "avg_top1": 0.9391567567567567
+        },
+        "2.1": {
+            "GTSRBVal:top1": 0.8701201201201201,
+            "MNISTVal:top1": 0.9882,
+            "GTSRBVal:normalized_top1": 0.8707738542449286,
+            "MNISTVal:normalized_top1": 0.9931658291457286,
+            "avg_normalized_top1": 0.9319698416953286,
+            "avg_top1": 0.92916006006006
+        },
+        "2.2": {
+            "GTSRBVal:top1": 0.8483483483483484,
+            "MNISTVal:top1": 0.9858,
+            "GTSRBVal:normalized_top1": 0.8489857250187829,
+            "MNISTVal:normalized_top1": 0.9907537688442212,
+            "avg_normalized_top1": 0.919869746931502,
+            "avg_top1": 0.9170741741741741
+        },
+        "2.3000000000000003": {
+            "GTSRBVal:top1": 0.8254504504504504,
+            "MNISTVal:top1": 0.9824,
+            "GTSRBVal:normalized_top1": 0.8260706235912847,
+            "MNISTVal:normalized_top1": 0.9873366834170855,
+            "avg_normalized_top1": 0.906703653504185,
+            "avg_top1": 0.9039252252252252
+        },
+        "2.4000000000000004": {
+            "GTSRBVal:top1": 0.7965465465465466,
+            "MNISTVal:top1": 0.9768,
+            "GTSRBVal:normalized_top1": 0.7971450037565739,
+            "MNISTVal:normalized_top1": 0.9817085427135679,
+            "avg_normalized_top1": 0.8894267732350709,
+            "avg_top1": 0.8866732732732733
+        },
+        "2.5": {
+            "GTSRBVal:top1": 0.777027027027027,
+            "MNISTVal:top1": 0.9698,
+            "GTSRBVal:normalized_top1": 0.7776108189331329,
+            "MNISTVal:normalized_top1": 0.9746733668341708,
+            "avg_normalized_top1": 0.8761420928836519,
+            "avg_top1": 0.8734135135135135
+        },
+        "2.6": {
+            "GTSRBVal:top1": 0.7484984984984985,
+            "MNISTVal:top1": 0.9642,
+            "GTSRBVal:normalized_top1": 0.749060856498873,
+            "MNISTVal:normalized_top1": 0.9690452261306532,
+            "avg_normalized_top1": 0.8590530413147631,
+            "avg_top1": 0.8563492492492493
+        },
+        "2.7": {
+            "GTSRBVal:top1": 0.7143393393393394,
+            "MNISTVal:top1": 0.9566,
+            "GTSRBVal:normalized_top1": 0.7148760330578512,
+            "MNISTVal:normalized_top1": 0.9614070351758794,
+            "avg_normalized_top1": 0.8381415341168653,
+            "avg_top1": 0.8354696696696697
+        },
+        "2.8000000000000003": {
+            "GTSRBVal:top1": 0.6745495495495496,
+            "MNISTVal:top1": 0.9476,
+            "GTSRBVal:normalized_top1": 0.6750563486100677,
+            "MNISTVal:normalized_top1": 0.9523618090452262,
+            "avg_normalized_top1": 0.8137090788276469,
+            "avg_top1": 0.8110747747747749
+        },
+        "2.9000000000000004": {
+            "GTSRBVal:top1": 0.634009009009009,
+            "MNISTVal:top1": 0.9362,
+            "GTSRBVal:normalized_top1": 0.6344853493613825,
+            "MNISTVal:normalized_top1": 0.9409045226130653,
+            "avg_normalized_top1": 0.7876949359872238,
+            "avg_top1": 0.7851045045045045
+        },
+        "3.0": {
+            "GTSRBVal:top1": 0.5919669669669669,
+            "MNISTVal:top1": 0.9168,
+            "GTSRBVal:normalized_top1": 0.592411720510894,
+            "MNISTVal:normalized_top1": 0.9214070351758793,
+            "avg_normalized_top1": 0.7569093778433866,
+            "avg_top1": 0.7543834834834835
+        }
+    },
+    "val_best": {
+        "GTSRBVal:top1": 0.9887387387387387,
+        "MNISTVal:top1": 0.9922,
+        "GTSRBVal:normalized_top1": 0.9894815927873779,
+        "MNISTVal:normalized_top1": 0.9971859296482412,
+        "avg_normalized_top1": 0.9933337612178095,
+        "avg_top1": 0.9904693693693694
+    }
+}
