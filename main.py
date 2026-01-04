@@ -223,4 +223,21 @@ if __name__ == "__main__":
 #               'SVHNVal:top1': 0.8942,
 #               'avg_normalized_top1': np.float64(0.8966338699154842),
 #               'avg_top1': np.float64(0.8459830979270695)}}
+
+# TSV-ISO (mean)
+#  'val_best': {'CarsVal:normalized_top1': 0.8877840909090909,
+#               'CarsVal:top1': 0.7678132678132679,
+#               'DTDVal:normalized_top1': 0.8293736501079914,
+#               'DTDVal:top1': 0.6808510638297872,
+#               'EuroSATVal:normalized_top1': 0.9201492537313433,
+#               'EuroSATVal:top1': 0.9133333333333333,
+#               'GTSRBVal:normalized_top1': 0.9346356123215628,
+#               'GTSRBVal:top1': 0.933933933933934,
+#               'MNISTVal:normalized_top1': 0.9752763819095478,
+#               'MNISTVal:top1': 0.9704,
+#               'SVHNVal:normalized_top1': 0.774286895411327,
+#               'SVHNVal:top1': 0.7492,
+#               'avg_normalized_top1': np.float64(0.8869176473984773),
+#               'avg_top1': np.float64(0.8359219331517204)}}
+
 # """

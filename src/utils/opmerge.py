@@ -11,6 +11,8 @@ batched_kron = torch.vmap(torch.kron)
 # ===================================================
 #                  Helper Functions
 # ===================================================
+
+
 def make_ls_mats(pus, pvs, a_tilde):
     """Create least squares params from task proj mats and target mat
 
@@ -84,13 +86,19 @@ def compute_lsopt_loss_gd(a_hat, a_tilde):
     u, s, vt = torch.linalg.svd(a_tilde, full_matrices=False)
     R = min(u.shape[1], vt.shape[2])
     Rp = max(1, R // B)
+    # TODO
+    # Rp = max(1, R // math.sqrt(B))
     u = u[:, :, :Rp]
     vt = vt[:, :Rp, :]
+
+    # projectors
     pus = u @ u.transpose(1, 2)  # (B, Do, Do)
-    v = vt.transpose(1, 2)
-    pvs = v @ vt  # (B, Di, Di)
+    pvs = vt @ vt.transpose(1, 2)  # (B, Di, Di)
+    pvs = vt.transpose(1, 2) @ vt  # (B, Di, Di)
+
     preds = torch.einsum("boj,jk,bki->boi", pus, a_hat, pvs)
-    loss = torch.linalg.norm(preds - a_tilde, ord="fro", dim=(1, 2)).square().mean()
+    tgt = torch.einsum("boj,bjk,bki->boi", pus, a_tilde, pvs)
+    loss = torch.linalg.norm(preds - tgt, ord="fro", dim=(1, 2)).square().mean()
     return loss
 
 
@@ -128,6 +136,72 @@ def merge_tsv(tensors, *args, **kwargs):
     # (Di, B, R)
     u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
     s_hat = s.reshape(-1)
+    vt_hat = vt.reshape(B * Rp, Do)
+    u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+    vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
+    tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
+    return tau_l
+
+
+def merge_tsv_iso(tensors, *args, **kwargs):
+    """Computes the TSV merge of the given tensors.
+
+    Args:
+        tensors (torch.Tensor): The tensors to merge. Shape: (N_tasks, Di, Do)
+
+    Returns:
+        torch.Tensor: The merged tensors. Shape: (Di, Do)
+    """
+    N_tasks = len(tensors)
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    R = min(u.shape[1], vt.shape[2])
+    Rp = R // N_tasks
+    u, s, vt = u[:, :, :Rp], s[:, :Rp], vt[:, :Rp, :]
+
+    # # # w/o decorrelation
+    # tau_bl = torch.einsum("bij,bj,bjk->bik", u, s, vt)
+    # tau[layer_name] = tau_bl.sum(dim=0)
+
+    # w/ decorrelation
+    B, Di, _ = u.shape
+    _, _, Do = vt.shape
+    # (Di, B, R)
+    u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
+    # Use the mean of s
+    s_hat = torch.ones_like(s.reshape(-1)) * s.mean()
+    vt_hat = vt.reshape(B * Rp, Do)
+    u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
+    vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
+    tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
+    return tau_l
+
+
+def merge_tsv_perm(tensors, *args, **kwargs):
+    """Computes the TSV merge of the given tensors.
+
+    Args:
+        tensors (torch.Tensor): The tensors to merge. Shape: (N_tasks, Di, Do)
+
+    Returns:
+        torch.Tensor: The merged tensors. Shape: (Di, Do)
+    """
+    N_tasks = len(tensors)
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    R = min(u.shape[1], vt.shape[2])
+    Rp = R // N_tasks
+    u, s, vt = u[:, :, :Rp], s[:, :Rp], vt[:, :Rp, :]
+
+    # # # w/o decorrelation
+    # tau_bl = torch.einsum("bij,bj,bjk->bik", u, s, vt)
+    # tau[layer_name] = tau_bl.sum(dim=0)
+
+    # w/ decorrelation
+    B, Di, _ = u.shape
+    _, _, Do = vt.shape
+    # (Di, B, R)
+    u_hat = u.permute(1, 0, 2).reshape(Di, B * Rp)
+    # Do a random permutation of s
+    s_hat = s.reshape(-1)[torch.randperm(s.numel())]
     vt_hat = vt.reshape(B * Rp, Do)
     u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
     vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
@@ -260,6 +334,8 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
     merge_func = {
         "avg": merge_avg,
         "tsv": merge_tsv,
+        "tsv_iso": merge_tsv_iso,
+        "tsv_perm": merge_tsv_perm,
         "lsopt": merge_lsopt_lstsq,
         "lsopt_gd": merge_lsopt_gd,
         "tsvopt": merge_tsvopt,
@@ -299,3 +375,69 @@ if __name__ == "__main__":
             "dot": torch.randn(8),
         },
     ]
+
+
+# """Results
+
+# >>> model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3 opm=lsopt_gd
+#  'val_best': {'CarsVal:normalized_top1': 0.0028409090909090906,
+#               'CarsVal:top1': 0.002457002457002457,
+#               'DTDVal:normalized_top1': 0.032397408207343416,
+#               'DTDVal:top1': 0.026595744680851064,
+#               'EuroSATVal:normalized_top1': 0.09999999999999999,
+#               'EuroSATVal:top1': 0.09925925925925926,
+#               'GTSRBVal:normalized_top1': 0.027047332832456798,
+#               'GTSRBVal:top1': 0.02702702702702703,
+#               'MNISTVal:normalized_top1': 0.10231155778894473,
+#               'MNISTVal:top1': 0.1018,
+#               'SVHNVal:normalized_top1': 0.0979743695742042,
+#               'SVHNVal:top1': 0.0948,
+#               'avg_normalized_top1': np.float64(0.06042859624897637),
+#               'avg_top1': np.float64(0.058656505570689965)}}
+# >>> model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3 opm=tsv
+#  'val_best': {'CarsVal:normalized_top1': 0.9161931818181818,
+#               'CarsVal:top1': 0.7923832923832924,
+#               'DTDVal:normalized_top1': 1.033477321814255,
+#               'DTDVal:top1': 0.848404255319149,
+#               'EuroSATVal:normalized_top1': 0.9630597014925374,
+#               'EuroSATVal:top1': 0.955925925925926,
+#               'GTSRBVal:normalized_top1': 0.9725770097670924,
+#               'GTSRBVal:top1': 0.9718468468468469,
+#               'MNISTVal:normalized_top1': 0.9941708542713568,
+#               'MNISTVal:top1': 0.9892,
+#               'SVHNVal:normalized_top1': 0.9247622984704423,
+#               'SVHNVal:top1': 0.8948,
+#               'avg_normalized_top1': np.float64(0.9673733946056443),
+#               'avg_top1': np.float64(0.9087600534125357)}}
+# >>> model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3 opm=tsv_iso
+#  'val_best': {'CarsVal:normalized_top1': 0.8877840909090909,
+#               'CarsVal:top1': 0.7678132678132679,
+#               'DTDVal:normalized_top1': 0.8293736501079914,
+#               'DTDVal:top1': 0.6808510638297872,
+#               'EuroSATVal:normalized_top1': 0.9201492537313433,
+#               'EuroSATVal:top1': 0.9133333333333333,
+#               'GTSRBVal:normalized_top1': 0.9346356123215628,
+#               'GTSRBVal:top1': 0.933933933933934,
+#               'MNISTVal:normalized_top1': 0.9752763819095478,
+#               'MNISTVal:top1': 0.9704,
+#               'SVHNVal:normalized_top1': 0.774286895411327,
+#               'SVHNVal:top1': 0.7492,
+#               'avg_normalized_top1': np.float64(0.8869176473984773),
+#               'avg_top1': np.float64(0.8359219331517204)}}
+
+# model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3 opm=tsv_perm
+#  'val_best': {'CarsVal:normalized_top1': 0.8806818181818181,
+#               'CarsVal:top1': 0.7616707616707616,
+#               'DTDVal:normalized_top1': 0.826133909287257,
+#               'DTDVal:top1': 0.6781914893617021,
+#               'EuroSATVal:normalized_top1': 0.9194029850746269,
+#               'EuroSATVal:top1': 0.9125925925925926,
+#               'GTSRBVal:normalized_top1': 0.9312546957175056,
+#               'GTSRBVal:top1': 0.9305555555555556,
+#               'MNISTVal:normalized_top1': 0.9780904522613065,
+#               'MNISTVal:top1': 0.9732,
+#               'SVHNVal:normalized_top1': 0.771186440677966,
+#               'SVHNVal:top1': 0.7462,
+#               'avg_normalized_top1': np.float64(0.8844583835334134),
+#               'avg_top1': np.float64(0.8337350665301021)}}
+# # """

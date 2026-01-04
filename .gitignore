@@ -10,3 +10,4 @@ media/*
 *.pyc
 *__pycache__*
 */datasets/*
+datasets/*
