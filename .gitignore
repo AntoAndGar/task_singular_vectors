@@ -11,3 +11,6 @@ media/*
 *__pycache__*
 */datasets/*
 datasets/*
+misc
+results
+results2
