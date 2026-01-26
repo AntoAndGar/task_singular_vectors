@@ -240,4 +240,55 @@ if __name__ == "__main__":
 #               'avg_normalized_top1': np.float64(0.8869176473984773),
 #               'avg_top1': np.float64(0.8359219331517204)}}
 
+
+# ********
+# proj both
+# 'avg_top1': np.float64(0.4125484078533724)}},
+#  'val_best': {'CarsVal:normalized_top1': 0.6789772727272727,
+#               'CarsVal:top1': 0.5872235872235873,
+#               'DTDVal:normalized_top1': 0.6382289416846653,
+#               'DTDVal:top1': 0.523936170212766,
+#               'EuroSATVal:normalized_top1': 0.6044776119402985,
+#               'EuroSATVal:top1': 0.6,
+#               'GTSRBVal:normalized_top1': 0.8429752066115701,
+#               'GTSRBVal:top1': 0.8423423423423423,
+#               'MNISTVal:normalized_top1': 0.9889447236180905,
+#               'MNISTVal:top1': 0.984,
+#               'SVHNVal:normalized_top1': 0.895824720959074,
+#               'SVHNVal:top1': 0.8668,
+#               'avg_normalized_top1': np.float64(0.7749047462568285),
+#               'avg_top1': np.float64(0.7340503499631158)}}
+
+# # proj_r
+# 'val_best': {'CarsVal:normalized_top1': 0.6789772727272727,
+#             'CarsVal:top1': 0.5872235872235873,
+#             'DTDVal:normalized_top1': 0.6382289416846653,
+#             'DTDVal:top1': 0.523936170212766,
+#             'EuroSATVal:normalized_top1': 0.6044776119402985,
+#             'EuroSATVal:top1': 0.6,
+#             'GTSRBVal:normalized_top1': 0.8429752066115701,
+#             'GTSRBVal:top1': 0.8423423423423423,
+#             'MNISTVal:normalized_top1': 0.9889447236180905,
+#             'MNISTVal:top1': 0.984,
+#             'SVHNVal:normalized_top1': 0.895824720959074,
+#             'SVHNVal:top1': 0.8668,
+#             'avg_normalized_top1': np.float64(0.7749047462568285),
+#             'avg_top1': np.float64(0.7340503499631158)}}
+
+# Asym
+#  'val_best': {'CarsVal:normalized_top1': 0.7073863636363636,
+#               'CarsVal:top1': 0.6117936117936118,
+#               'DTDVal:normalized_top1': 0.4924406047516198,
+#               'DTDVal:top1': 0.40425531914893614,
+#               'EuroSATVal:normalized_top1': 0.4455223880597015,
+#               'EuroSATVal:top1': 0.44222222222222224,
+#               'GTSRBVal:normalized_top1': 0.5007513148009015,
+#               'GTSRBVal:top1': 0.5003753753753754,
+#               'MNISTVal:normalized_top1': 0.892462311557789,
+#               'MNISTVal:top1': 0.888,
+#               'SVHNVal:normalized_top1': 0.6169904919388176,
+#               'SVHNVal:top1': 0.597,
+#               'avg_normalized_top1': np.float64(0.6092589124575322),
+#               'avg_top1': np.float64(0.5739410880900243)}}
+
 # """
