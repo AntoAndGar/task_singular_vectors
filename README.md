@@ -42,7 +42,11 @@ python finetune.py --model=ViT-B-32 --world-size=2
 Run TSV-Merge on selected tasks with:
 
 ```bash
-OPENCLIP_CACHEDIR=$SCRATCH/openclip python main.py model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=3 opm=tsv
+OPENCLIP_CACHEDIR=$SCRATCH/openclip python main.py model=ViT-B-16 method="opmerge" DATASETS=[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=10 opm=eigcov_modded
+
+# OPENCLIP_CACHEDIR=$SCRATCH/openclip python main.py model=ViT-B-16 method="opmerge" DATASETS
+# =[Cars,DTD,EuroSAT,GTSRB,MNIST,SVHN] n_eval_points=10 opm=powerlaw_spectral
+# opmerge_k=100
 ```
 
 ### Model merging evaluation
