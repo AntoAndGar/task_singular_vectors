@@ -113,7 +113,32 @@ def compute_polar(A):
 
 def matrix_pow(A, pow=1.0):
     eigvals, eigvecs = torch.linalg.eigh(A)
+    eigvals = torch.clamp(eigvals, min=1e-6)  # prevent division by zero
     return eigvecs @ torch.diag(eigvals.pow(pow)) @ eigvecs.T
+
+
+def solve_sylvester_simplified(a, b, c):
+    """
+    Solves AW + WB = C assuming A, B are symmetric
+    and we force all their eigenvalues to be 1.
+    """
+    # 1. Get the Eigenbases (Directions)
+    # We ignore vals_a/vals_b since we assume they are 1
+    _, vecs_a = torch.linalg.eigh(a)
+    _, vecs_b = torch.linalg.eigh(b)
+
+    # 2. Rotate C into the aligned coordinate system
+    # C_tilde = U_A.T @ C @ U_B
+    c_tilde = vecs_a.T @ c @ vecs_b
+
+    # 3. Solve assuming eigenvalues are 1
+    # Equation: 1*w + w*1 = c_tilde  =>  2w = c_tilde
+    w_tilde = c_tilde / 2.0
+
+    # 4. Rotate back to original space
+    w = vecs_a @ w_tilde @ vecs_b.T
+
+    return w
 
 
 # ===================================================
@@ -134,8 +159,10 @@ def merge_ta(ws, *args, **kwargs):
 # **************************************************
 
 
-def merge_tsv(tensors, apply_svals=True, **kwargs):
+def merge_tsv(tensors, **kwargs):
     """Computes the TSV merge of the given tensors.
+
+    Computes: Uo  Dc Vto
 
     Args:
         tensors (torch.Tensor): The tensors to merge. Shape: (N_tasks, Di, Do)
@@ -162,23 +189,12 @@ def merge_tsv(tensors, apply_svals=True, **kwargs):
     vt_hat = vt.reshape(B * Rp, Do)
     u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
     vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
-    if apply_svals:
-        tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)  # (Di, Do)
-    else:
-        tau_l = torch.einsum("ij,jk->ik", u_ortho, vt_ortho)  # (Di, Do)
+    tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)  # (Di, Do)
     return tau_l
 
 
 def merge_tsv_v1(tensors, **kwargs):
-    # projects onto uo and vto in the end
-    """Computes the TSV merge of the given tensors.
-
-    Args:
-        tensors (torch.Tensor): The tensors to merge. Shape: (N_tasks, Di, Do)
-
-    Returns:
-        torch.Tensor: The merged tensors. Shape: (Di, Do)
-    """
+    # Project: Uo UoT  Dc Vo VoT
     N_tasks = len(tensors)
     u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
     R = min(u.shape[1], vt.shape[2])
@@ -198,17 +214,14 @@ def merge_tsv_v1(tensors, **kwargs):
     vt_hat = vt.reshape(B * Rp, Do)
     u_ortho = compute_procrustes(u_hat)  # (Di, Rp)
     vt_ortho = compute_procrustes(vt_hat.T).T  # (Rp, Do)
-    # Original:
-    # tau_l = torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)  # (Di, Do)
-    # Projected:
     wbar = tensors.sum(dim=0)
     tau_l = u_ortho @ u_ortho.T @ wbar @ vt_ortho.T @ vt_ortho
     return tau_l
 
 
 def merge_tsv_v2(tensors, *args, **kwargs):
+    # Performs same computation as merge_tsv but with the whitening operation (less stable)
     # using Uc(Uc^T Uc)^-1/2 and Vc(Vc^T Vc)^-1/2
-    # performs poorly because of numerical instability
     N, Do, Di = tensors.shape
     u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
     Rp = min(Do // N, Di // N)
@@ -228,6 +241,28 @@ def merge_tsv_v2(tensors, *args, **kwargs):
 
 
 def merge_tsv_v3(tensors, *args, **kwargs):
+    # Performs similar computation as merge_tsv but with the pseudoinverse operation (less stable)
+    # using Uc(Uc^T Uc)^-1 and Vc(Vc^T Vc)^-1
+    N, Do, Di = tensors.shape
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    Rp = min(Do // N, Di // N)
+    u = u[:, :, :Rp]
+    vt = vt[:, :Rp, :]
+    v = vt.transpose(1, 2)
+    s = s[:, :Rp]
+
+    # svd of projectors
+    uc = u.permute(1, 0, 2).reshape(Do, N * Rp)
+    vc = v.permute(1, 0, 2).reshape(Di, N * Rp)
+    gu = uc.T @ uc
+    gv = vc.T @ vc
+    utilde = matrix_pow(gu, -1.0)
+    vtilde = matrix_pow(gv, -1.0)
+    return uc @ utilde @ torch.diag(s.reshape(-1)) @ vtilde @ vc.T
+
+
+def merge_tsv_v4(tensors, *args, **kwargs):
+    # Performs same computation as merge_tsv_v3 but with the pseudoinverse operation (stable)
     # using Uc(Uc^T Uc)^-1 and Vc(Vc^T Vc)^-1
     N, Do, Di = tensors.shape
     u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
@@ -262,7 +297,7 @@ def merge_tsv_v3(tensors, *args, **kwargs):
     return uc_pinv.T @ dc @ vc_pinv
 
 
-def merge_tsv_iso_c_left(tensors, apply_svals=True, **kwargs):
+def merge_tsv_iso_c_left(tensors, **kwargs):
     """Computes the TSV merge of the given tensors.
 
     Args:
@@ -388,41 +423,119 @@ def merge_tsvopt(a_tilde, verbose=False, n_iters=100, *args, **kwargs):
     return torch.einsum("ij,j,jk->ik", u_ortho, s_hat, vt_ortho)
 
 
-def merge_weighted_mean(ws, *args, **kwargs):
-    """
-    ws: (num_models, d, d) - batch of weight matrices
-    returns: (d, d) - merged weight matrix biased towards angles
-    """
-    EPS = 1e-8
+# **************************************************
+#               Eigen Covariance
+# **************************************************
 
-    # 1. compute gram matrices: g = w^T @ w
-    # shape: (n, d, d)
-    g = torch.bmm(ws.transpose(1, 2), ws)
 
-    # 2. compute m = g^(-1/2) using eigendecomposition
-    # since g is symmetric, eigh is stable.
-    # l: eigenvalues (n, d), v: eigenvectors (n, d, d)
-    l, v = torch.linalg.eigh(g)
+def merge_eigcov_right(tensors, *args, **kwargs):
+    _, _, vt = torch.linalg.svd(tensors, full_matrices=False)
+    wbar = tensors.sum(dim=0)
+    vbar = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
+    return wbar @ torch.linalg.pinv(vbar)
 
-    # inverse square root of eigenvalues
-    # shape: (n, d)
-    inv_sqrt_l = 1.0 / torch.sqrt(torch.clamp(l, min=EPS))
 
-    # reconstruct m = v @ diag(l^-1/2) @ v^T
-    # v * inv_sqrt_l.unsqueeze(1) scales each column i by l_i
-    m = torch.bmm(v * inv_sqrt_l.unsqueeze(1), v.transpose(1, 2))
+def merge_eigcov_left(tensors, *args, **kwargs):
+    T, Do, Di = tensors.shape
+    u, s, vt = torch.linalg.svd(
+        tensors, full_matrices=False
+    )  # u:(T,Do,R) s:(T,R) vt:(T,R,Di)
+    R = s.shape[-1]
+    u = u[:, :, :R]
+    vt = vt[:, :R, :]
 
-    # 3. compute the numerator: sum(w @ m) -> sum(orthogonal components)
-    # ws @ m extracts the pure rotation (polar decomposition)
-    sum_ortho = torch.bmm(ws, m).sum(dim=0)
+    # (T, Do, R) -> (Do, T, R) ->(Do, T*R)
+    uc = u.permute(1, 0, 2).reshape(Do, T * R)
+    # (T, R, Di) -> (T*R, Di)
+    vct = vt.reshape(T * R, Di)
+    sc = torch.diag(s.reshape(-1))
+    uc_pinv = torch.linalg.pinv(uc)
+    wm = uc_pinv.T @ sc @ vct  # (Do,Di)
+    return wm
 
-    # 4. compute the denominator: sum(m)
-    sum_weights = m.sum(dim=0)
 
-    # 5. solve: w_star = sum_ortho @ (sum_weights)^-1
-    w_star = sum_ortho @ torch.linalg.inv(sum_weights)
+def merge_eigcov_sylvester_v1(tensors, *args, **kwargs):
+    # Solve sylvester equation: AW + WB = C
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    a = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
+    b = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
+    c = tensors.sum(dim=0) * 2
+    wm = torch.from_numpy(
+        solve_sylvester(a.cpu().numpy(), b.cpu().numpy(), c.cpu().numpy())
+    ).to(tensors.device)
+    return wm
 
-    return w_star
+
+def merge_eigcov_sylvester_v2(tensors, *args, **kwargs):
+    # Solve sylvester equation: AW + WB = C,
+    # using simplified method as A,B are symmetric
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    a = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
+    b = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
+    wbar = tensors.sum(dim=0)
+    ua, _, _ = torch.linalg.svd(a, full_matrices=False)
+    ub, _, _ = torch.linalg.svd(b, full_matrices=False)
+    return ua @ ua.T @ wbar @ ub @ ub.T
+
+
+def merge_eigcov_sylvester_v3(tensors, epsilon=1e-4, *args, **kwargs):
+    # Solve sylvester equation: AW + WB = C
+    # using SVD of projectors
+    N, Do, Di = tensors.shape
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    uc = u.permute(1, 0, 2).reshape(Do, N * u.shape[2])
+    vc = vt.transpose(1, 2).reshape(Di, N * u.shape[2])
+
+    # get psi_u and psi_v
+    psi_u, lambda_u, _ = torch.linalg.svd(uc, full_matrices=False)
+    psi_v, lambda_v, _ = torch.linalg.svd(vc, full_matrices=False)
+
+    # Extract diags
+    lambda_uv = lambda_u.square().unsqueeze(1) + lambda_v.square().unsqueeze(0)
+
+    w_bar = tensors.sum(dim=0) * 2
+    c_tilde = (psi_u.T @ w_bar @ psi_v) / (lambda_uv + epsilon)
+
+    return psi_u @ c_tilde @ psi_v.T
+
+
+def merge_eigcov_sylvester_v4(tensors, *args, **kwargs):
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    pu_tilde = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
+    pv_tilde = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
+
+    # svd of projectors
+    psi_u, lambda_u, _ = torch.linalg.svd(pu_tilde, full_matrices=True)
+    psi_v, lambda_v, _ = torch.linalg.svd(pv_tilde, full_matrices=True)
+
+    # # extract diags
+    # lambda_uv = lambda_u.unsqueeze(1) + lambda_v.unsqueeze(0)
+    wbar = tensors.sum(dim=0)
+    return psi_u @ psi_u.T @ wbar @ psi_v @ psi_v.T
+
+
+# ================================================
+#              Alternate Methods
+# ================================================
+
+
+def merge_punity(tensors: torch.Tensor, **kwargs):
+    # partition of unity method
+    q = torch.bmm(tensors.transpose(1, 2), tensors)  # (N, Di, Di)
+    qbar = q.sum(dim=0)
+    return torch.bmm(tensors, q).sum(dim=0) @ torch.linalg.pinv(qbar)
+
+
+def merge_glowhite(tensors: torch.Tensor, **kwargs):
+    # glowhite method
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    v = vt.transpose(1, 2)
+    cx = torch.bmm(v, vt)
+    cbar = cx.sum(dim=0)
+    wm = torch.einsum("nij,jk,nkl->nil", tensors, matrix_pow(cbar, -0.5), cx).sum(
+        dim=0
+    ) @ torch.linalg.pinv(cbar)
+    return wm
 
 
 # **************************************************
@@ -619,6 +732,43 @@ def merge_normalized_mean(ws, **kwargs):
     # normalize each row of ws
     ws_prime = ws / torch.linalg.norm(ws, dim=-1, keepdim=True)
     return ws_prime.mean(dim=0)
+
+
+def merge_weighted_mean(ws, *args, **kwargs):
+    """
+    ws: (num_models, d, d) - batch of weight matrices
+    returns: (d, d) - merged weight matrix biased towards angles
+    """
+    EPS = 1e-8
+
+    # 1. compute gram matrices: g = w^T @ w
+    # shape: (n, d, d)
+    g = torch.bmm(ws.transpose(1, 2), ws)
+
+    # 2. compute m = g^(-1/2) using eigendecomposition
+    # since g is symmetric, eigh is stable.
+    # l: eigenvalues (n, d), v: eigenvectors (n, d, d)
+    l, v = torch.linalg.eigh(g)
+
+    # inverse square root of eigenvalues
+    # shape: (n, d)
+    inv_sqrt_l = 1.0 / torch.sqrt(torch.clamp(l, min=EPS))
+
+    # reconstruct m = v @ diag(l^-1/2) @ v^T
+    # v * inv_sqrt_l.unsqueeze(1) scales each column i by l_i
+    m = torch.bmm(v * inv_sqrt_l.unsqueeze(1), v.transpose(1, 2))
+
+    # 3. compute the numerator: sum(w @ m) -> sum(orthogonal components)
+    # ws @ m extracts the pure rotation (polar decomposition)
+    sum_ortho = torch.bmm(ws, m).sum(dim=0)
+
+    # 4. compute the denominator: sum(m)
+    sum_weights = m.sum(dim=0)
+
+    # 5. solve: w_star = sum_ortho @ (sum_weights)^-1
+    w_star = sum_ortho @ torch.linalg.inv(sum_weights)
+
+    return w_star
 
 
 def merge_mci(ws, mode="right", **kwargs):
@@ -1189,157 +1339,6 @@ def merge_preserve_var(Ws: torch.Tensor, **kwargs):
     # 3. Rescale
     current_norm = torch.norm(W_avg, p="fro")
     return W_avg * (target_norm / (current_norm + 1e-8))
-
-
-# **************************************************
-#               Eigen Covariance
-# **************************************************
-
-
-def merge_eigcov(tensors, *args, **kwargs):
-    _, _, vt = torch.linalg.svd(tensors, full_matrices=False)
-    wbar = tensors.sum(dim=0)
-    vbar = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
-    return wbar @ torch.linalg.pinv(vbar)
-
-
-def merge_eigcov_modded(tensors, *args, **kwargs):
-    # 'avg_normalized_top1': np.float64(0.5186897876066835),
-    # 'avg_top1': np.float64(0.484472796394073)}}
-    T, Do, Di = tensors.shape
-
-    u, s, vt = torch.linalg.svd(
-        tensors, full_matrices=False
-    )  # u:(T,Do,R) s:(T,R) vt:(T,R,Di)
-    R = s.shape[-1]
-    v = vt.transpose(1, 2)  # (T,Di,R)
-
-    # (T,Do,R) -> (T*R,Do)  and  (T,Di,R) -> (T*R,Di)
-    uc = u.reshape(T * R, Do)
-    vc = v.reshape(T * R, Di)
-
-    uc_pinv = torch.linalg.pinv(uc)  # (Do, T*R)
-    vc_pinv = torch.linalg.pinv(vc)  # (Di, T*R)
-
-    wm = uc_pinv @ torch.diag(s.reshape(-1)) @ vc_pinv.T  # (Do,Di)
-    # print(wm.shape)
-    return wm
-
-
-def merge_eigcov_modded_avg(tensors, *args, **kwargs):
-
-    T, Do, Di = tensors.shape
-
-    u, s, vt = torch.linalg.svd(
-        tensors, full_matrices=False
-    )  # u:(T,Do,R) s:(T,R) vt:(T,R,Di)
-    R = s.shape[-1]
-    u = u[:, :, :R]
-    vt = vt[:, :R, :]
-
-    # (T, Do, R) -> (Do, T, R) ->(Do, T*R)
-    uc = u.permute(1, 0, 2).reshape(Do, T * R)
-    # (T, R, Di) -> (T*R, Di)
-    vct = vt.reshape(T * R, Di)
-    sc = torch.diag(s.reshape(-1))
-    uc_pinv = torch.linalg.pinv(uc)
-    wm = uc_pinv.T @ sc @ vct  # (Do,Di)
-    return wm
-
-
-def solve_sylvester_simplified(a, b, c):
-    """
-    Solves AW + WB = C assuming A, B are symmetric
-    and we force all their eigenvalues to be 1.
-    """
-    # 1. Get the Eigenbases (Directions)
-    # We ignore vals_a/vals_b since we assume they are 1
-    _, vecs_a = torch.linalg.eigh(a)
-    _, vecs_b = torch.linalg.eigh(b)
-
-    # 2. Rotate C into the aligned coordinate system
-    # C_tilde = U_A.T @ C @ U_B
-    c_tilde = vecs_a.T @ c @ vecs_b
-
-    # 3. Solve assuming eigenvalues are 1
-    # Equation: 1*w + w*1 = c_tilde  =>  2w = c_tilde
-    w_tilde = c_tilde / 2.0
-
-    # 4. Rotate back to original space
-    w = vecs_a @ w_tilde @ vecs_b.T
-
-    return w
-
-
-def merge_eigcov_sylvester(tensors, *args, **kwargs):
-    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
-    a = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
-    b = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
-    c = tensors.sum(dim=0) * 2
-    wm = torch.from_numpy(
-        solve_sylvester(a.cpu().numpy(), b.cpu().numpy(), c.cpu().numpy())
-    ).to(tensors.device)
-    return wm
-
-
-def merge_eigcov_sylvester_v2(tensors, *args, **kwargs):
-    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
-    a = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
-    b = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
-    wbar = tensors.sum(dim=0)
-    ua, _, _ = torch.linalg.svd(a, full_matrices=False)
-    ub, _, _ = torch.linalg.svd(b, full_matrices=False)
-    return ua @ ua.T @ wbar @ ub @ ub.T
-
-
-# def merge_eigcov_sylvester_v3(tensors, epsilon=1e-4, *args, **kwargs):
-#     u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
-#     pu_tilde = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
-#     pv_tilde = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
-
-#     # svd of projectors
-#     psi_u, lambda_u, _ = torch.linalg.svd(pu_tilde, full_matrices=True)
-#     psi_v, lambda_v, _ = torch.linalg.svd(pv_tilde, full_matrices=True)
-
-#     # # extract diags
-#     lambda_uv = lambda_u.unsqueeze(1) + lambda_v.unsqueeze(0)
-
-#     wbar = tensors.sum(dim=0) * 2
-#     return psi_u @ ((psi_u.T @ wbar @ psi_v) / (lambda_uv + epsilon)) @ psi_v.T
-
-
-def merge_eigcov_sylvester_v3(tensors, epsilon=1e-4, *args, **kwargs):
-    N, Do, Di = tensors.shape
-    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
-    uc = u.permute(1, 0, 2).reshape(Do, N * u.shape[2])
-    vc = vt.transpose(1, 2).reshape(Di, N * u.shape[2])
-
-    # get psi_u and psi_v
-    psi_u, lambda_u, _ = torch.linalg.svd(uc, full_matrices=False)
-    psi_v, lambda_v, _ = torch.linalg.svd(vc, full_matrices=False)
-
-    # Extract diags
-    lambda_uv = lambda_u.square().unsqueeze(1) + lambda_v.square().unsqueeze(0)
-
-    w_bar = tensors.sum(dim=0) * 2
-    c_tilde = (psi_u.T @ w_bar @ psi_v) / (lambda_uv + epsilon)
-
-    return psi_u @ c_tilde @ psi_v.T
-
-
-def merge_eigcov_sylvester_v4(tensors, *args, **kwargs):
-    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
-    pu_tilde = torch.bmm(u, u.transpose(1, 2)).sum(dim=0)
-    pv_tilde = torch.bmm(vt.transpose(1, 2), vt).sum(dim=0)
-
-    # svd of projectors
-    psi_u, lambda_u, _ = torch.linalg.svd(pu_tilde, full_matrices=True)
-    psi_v, lambda_v, _ = torch.linalg.svd(pv_tilde, full_matrices=True)
-
-    # # extract diags
-    # lambda_uv = lambda_u.unsqueeze(1) + lambda_v.unsqueeze(0)
-    wbar = tensors.sum(dim=0)
-    return psi_u @ psi_u.T @ wbar @ psi_v @ psi_v.T
 
 
 # def merge_project_mean(W: torch.Tensor, rtol: float = 1e-6, **kwargs) -> torch.Tensor:
@@ -2029,12 +2028,26 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
     device = config.device
 
     merge_func = {
-        # baselines
+        # **** Baseline Methods ****
         "avg": merge_avg,
         "ta": merge_ta,
         "tsv": merge_tsv,
-        "tsv_no_svals": lambda x, **kw: merge_tsv(x, apply_svals=False, **kw),
         "isoc": merge_isoc,
+        # **** TSV Methods ****
+        "tsv_v1": merge_tsv_v1,
+        "tsv_v2": merge_tsv_v2,
+        "tsv_v3": merge_tsv_v3,
+        # **** Eigen Covariance Methods ****
+        "eigcov_right": merge_eigcov_right,
+        "eigcov_left": merge_eigcov_left,
+        "eigcov_sylvester_v1": merge_eigcov_sylvester_v1,
+        "eigcov_sylvester_v2": merge_eigcov_sylvester_v2,
+        "eigcov_sylvester_v3": merge_eigcov_sylvester_v3,
+        "eigcov_sylvester_v4": merge_eigcov_sylvester_v4,
+        # **** Alternate Methods ****
+        "punity": merge_punity,
+        "glowhite": merge_glowhite,
+        # **** Mixture Methods ****
         # mixes
         # proj: identity (avg), fc: onehot (ta)
         # mixing wa/ta with wa fallback
@@ -2051,34 +2064,19 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
         "mix_wa_ta_ta_abl": lambda x, **kw: merge_mix(
             x, n2f={"c_proj": merge_ta, "c_fc": merge_avg, "default": merge_ta}, **kw
         ),
-        "mix_wa_tsv_wa": lambda x, **kw: merge_mix(
-            x, n2f={"c_proj": merge_avg, "c_fc": merge_tsv, "default": merge_avg}, **kw
+        # TSV applied to one layer type at a time
+        "mix_tsv_ta_l1": lambda x, **kw: merge_mix(
+            x, n2f={"c_proj": merge_tsv, "default": merge_ta}, **kw
         ),
-        "mix_wa_tsv_wa_abl": lambda x, **kw: merge_mix(
-            x, n2f={"c_proj": merge_tsv, "c_fc": merge_wa, "default": merge_avg}, **kw
+        "mix_tsv_ta_l2": lambda x, **kw: merge_mix(
+            x, n2f={"c_fc": merge_tsv, "default": merge_ta}, **kw
         ),
-        # "tsv_wa_mix_abl": merge_tsv_wa_mix_abl,
-        # "ta_wa_mix": merge_ta_wa_mix,
-        # "ta_wa_mix_abl": merge_ta_wa_mix_abl,
-        # "ta_wa_tsv_mix": merge_ta_wa_tsv_mix,
-        # end of mixes
-        "tsv_iso": merge_tsv_iso,
-        "tsv_perm": merge_tsv_perm,
-        "tsv_v2": merge_tsv_v2,
-        "lsopt": merge_lsopt_lstsq,
-        "lsopt_gd": merge_lsopt_gd,
-        "tsvopt": merge_tsvopt,
-        "mci_r": lambda x, *a, **kw: merge_mci(x, mode="right"),
-        "mci_l": lambda x, *a, **kw: merge_mci(x, mode="left"),
-        "proj_l": lambda x, *a, **kw: merge_proj(x, mode="left"),
-        "proj_r": lambda x, *a, **kw: merge_proj(x, mode="right"),
-        "proj_b": lambda x, *a, **kw: merge_proj(x, mode="both"),
-        "aproptwa": merge_aproptwa,
-        "asym": merge_wa_asym,
-        "min_angle_rows": lambda x, *a, **kw: merge_min_angle(x, mode="rows"),
-        "min_angle_cols": lambda x, *a, **kw: merge_min_angle(x, mode="cols"),
-        "3ltsv": merge_3ltsv,
-        "maxvar": merge_maxvar,
+        "mix_tsv_ta_l3": lambda x, **kw: merge_mix(
+            x, n2f={"in_proj": merge_tsv, "default": merge_ta}, **kw
+        ),
+        "mix_tsv_ta_l4": lambda x, **kw: merge_mix(
+            x, n2f={"out_proj": merge_tsv, "default": merge_ta}, **kw
+        ),
         "normalized_mean": merge_normalized_mean,
         "weighted_mean": merge_weighted_mean,
         "wa_norm_pres": merge_wa_norm_pres,
@@ -2086,14 +2084,6 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
         "maor_agnostic": lambda x, **kw: merge_maor(x, magnitude_agnostic=True, **kw),
         "maor_aware": lambda x, **kw: merge_maor(x, magnitude_agnostic=False, **kw),
         "karcher": merge_karcher,
-        "preserve_var": merge_preserve_var,
-        "eigcov": merge_eigcov,
-        "eigcov_modded": merge_eigcov_modded,
-        "eigcov_modded_avg": merge_eigcov_modded_avg,
-        "eigcov_sylvester": merge_eigcov_sylvester,
-        "eigcov_sylvester_v2": merge_eigcov_sylvester_v2,
-        "eigcov_sylvester_v3": merge_eigcov_sylvester_v3,
-        "eigcov_sylvester_v4": merge_eigcov_sylvester_v4,
         "project_mean_col": lambda x, **kw: merge_project_mean(x, mode="col", **kw),
         "project_mean_row": lambda x, **kw: merge_project_mean(x, mode="row", **kw),
         "project_mean_both": lambda x, **kw: merge_project_mean(x, mode="both", **kw),
@@ -2106,6 +2096,7 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
         "project_mean_both_lr": lambda x, **kw: merge_project_mean(
             x, mode="both", low_rank=True, **kw
         ),
+        "preserve_var": merge_preserve_var,
         # New methods:
         "trimmed_mean": merge_trimmed_mean,
         "huber_mean": merge_huber_mean,
