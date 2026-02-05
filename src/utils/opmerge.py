@@ -711,6 +711,13 @@ def merge_glowhite(tensors: torch.Tensor, **kwargs):
 # **************************************************
 
 
+def merge_by_rank(tensors: torch.Tensor, rank: int, **kwargs):
+    # Ct approx Delta_t^T Delta_t
+    # measure rank. If low, then use merge_ta if high then use merge_avg
+    u, s, vt = torch.linalg.svd(tensors, full_matrices=False)
+    pass
+
+
 def merge_mix(tensors, layer_name, n2f):
     for k, v in n2f.items():
         if k in layer_name:
