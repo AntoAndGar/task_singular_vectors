@@ -1,11 +1,14 @@
 #### Regularized RegMean
 import itertools
+import os
+import pickle
 from typing import List, Optional, Tuple, Literal, Dict
 from copy import deepcopy
 import torch
 from tqdm import tqdm
 import math
 from scipy.linalg import solve_sylvester
+import numpy as np
 
 batched_kron = torch.vmap(torch.kron)
 
@@ -818,6 +821,29 @@ def merge_wa_norm_pres(tensors: torch.Tensor, **kwargs) -> torch.Tensor:
     return tensors.sum(dim=0) / math.sqrt(N)
 
 
+def get_rank_from_spectrum(spectrum):
+    # return np.sum(np.square(spectrum)) / np.max(np.square(spectrum))
+    return np.sum(spectrum > 1e-5)
+
+
+def get_ranks_dict(task_vectors):
+    # Load spectrums and comput ranks
+    RESULTS_DIR = "results"
+    DATASET_NAME = "qasc"
+    MODEL_NAME = "t5-base"
+    # Load spectrums
+    # covs_dCars_mViT-B-16
+    with open(
+        os.path.join(RESULTS_DIR, f"spectrums_d{DATASET_NAME}_m{MODEL_NAME}.pkl"), "rb"
+    ) as f:
+        spectrums = pickle.load(f)
+
+    # Compute ranks
+    ranks_dict = {}
+    for key, spectrum in spectrums.items():
+        ranks_dict[key] = get_rank_from_spectrum(spectrum) / min(spectrum.shape)
+
+
 def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
     """Computes the OpMerge task vector.
 
@@ -891,6 +917,8 @@ def compute_opmerge_task_vector(task_vectors, config, *args, **kwargs):
     }  # selected by config.opm
 
     print(f"***** Using OpMerge {config.opm} *****")
+
+    # Load covariance matrices
 
     for layer_name in task_vectors[0].vector.keys():
         tensors = torch.stack([tv.vector[layer_name] for tv in task_vectors]).to(device)
