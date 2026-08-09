@@ -14,7 +14,7 @@ from torchvision.datasets.vision import VisionDataset
 
 
 class PytorchStanfordCars(VisionDataset):
-    """`Stanford Cars <https://ai.stanford.edu/~jkrause/cars/car_dataset.html>`_ Dataset
+    """`Stanford Cars <https://ai.stanford.edu/~jkrause/cars/>`_ Dataset
 
     The Cars dataset contains 16,185 images of 196 classes of cars. The data is
     split into 8,144 training images and 8,041 testing images, where each class
